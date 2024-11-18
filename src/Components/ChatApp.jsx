@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { io } from 'socket.io-client';
 
 // Connect to the backend server
-const socket = io('http://localhost:5000');
+const socket = io('https://systemnotificationbackend.onrender.com');
 
 const ChatApp = () => {
   const [groupId, setGroupId] = useState('');
