@@ -8,18 +8,19 @@ const ChatApp = () => {
   const [groupId, setGroupId] = useState('');
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState([]);
-  const [isJoined, setIsJoined] = useState(false); // State to track if the user has joined a group
-  const [isOnline, setIsOnline] = useState(true); // Track user's online/offline status
+  const [isJoined, setIsJoined] = useState(false); // Track if user is in a group
+  const [isOnline, setIsOnline] = useState(true); // Track user's online status
 
-  // Request Notification Permission
+  // Request Notification Permission on mount
   useEffect(() => {
     if ('Notification' in window && Notification.permission !== 'granted') {
       Notification.requestPermission();
     }
   }, []);
 
-  // Listen for incoming messages
+  // Listen for incoming messages and connection status
   useEffect(() => {
+    // Listen for messages from other users
     socket.on('receiveMessage', (data) => {
       setMessages((prevMessages) => [
         ...prevMessages,
@@ -49,7 +50,7 @@ const ChatApp = () => {
       setIsOnline(true);
     });
 
-    // Cleanup the listener when the component unmounts
+    // Cleanup the listeners when the component unmounts
     return () => {
       socket.off('receiveMessage');
       socket.off('disconnect');
@@ -66,11 +67,27 @@ const ChatApp = () => {
     }
   };
 
+  // Leave the group
+  const leaveGroup = () => {
+    socket.emit('leaveGroup', groupId);
+    setIsJoined(false);
+    setGroupId('');
+    setMessages([]); // Optionally clear messages when leaving
+    console.log(`Left group: ${groupId}`);
+  };
+
   // Send a message to the group
   const sendMessage = () => {
     if (groupId && message) {
       socket.emit('sendMessage', groupId, message);
       setMessage(''); // Clear the input field after sending the message
+      if (Notification.permission === 'granted') {
+        // Send a notification after the message is sent
+        new Notification('Message Sent', {
+          body: `Your message to group ${groupId} was sent successfully.`,
+          icon: '/favicon.ico'
+        });
+      }
     }
   };
 
@@ -78,6 +95,7 @@ const ChatApp = () => {
     <div className="max-w-4xl mx-auto p-6 bg-gray-100 rounded-lg shadow-lg">
       <h1 className="text-3xl font-semibold text-center text-gray-700">Socket.IO Group Chat</h1>
 
+      {/* If the user is not part of a group */}
       {!isJoined ? (
         <div className="text-center mt-6">
           <input
@@ -96,6 +114,7 @@ const ChatApp = () => {
         </div>
       ) : (
         <div className="mt-6">
+          {/* Messages Section */}
           <div className="max-h-96 overflow-y-auto p-4 bg-white rounded-lg shadow-md">
             <h3 className="text-xl font-semibold text-gray-800">Messages:</h3>
             {messages.map((msg, index) => (
@@ -105,6 +124,7 @@ const ChatApp = () => {
             ))}
           </div>
 
+          {/* Message Input Section */}
           <div className="mt-6 flex space-x-4">
             <input
               type="text"
@@ -127,6 +147,16 @@ const ChatApp = () => {
               You are offline. Messages will be sent when you are back online.
             </div>
           )}
+
+          {/* Leave Group Button */}
+          <div className="mt-4 text-center">
+            <button
+              onClick={leaveGroup}
+              className="px-6 py-3 bg-red-500 text-white font-semibold rounded-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500"
+            >
+              Leave Group
+            </button>
+          </div>
         </div>
       )}
     </div>
