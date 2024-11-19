@@ -38,7 +38,7 @@ const App = () => {
     }
 
     try {
-      await fetch('http://localhost:4000/notify', {
+      await fetch('https://systemnotificationbackend.onrender.com/notify', {
         method: 'POST',
         body: JSON.stringify({
           subscription,
